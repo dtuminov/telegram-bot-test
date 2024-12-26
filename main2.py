@@ -1,32 +1,52 @@
 import logging
 import sqlite3
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 
 from handlers.start import start
 from handlers.help import help_command
+from handlers.registration import register, receive_info, receive_photo
+from handlers.profile import profile
+from handlers.find_matches import find_match, show_next_match
+from handlers.edit_profile import edit_profile, receive_new_info
+from init import conn, cursor
 
 # Включаем логирование
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Создаем и подключаемся к базе данных
-conn = sqlite3.connect('users.db')
-cursor = conn.cursor()
-
 # Создаем таблицу для хранения пользователей, если она не существует
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
+   id INTEGER PRIMARY KEY,
     username TEXT,
     name TEXT,
+    course TEXT,
+    age TEXT,
+    tags TEXT,
     info TEXT,
+    preferences TEXT,
     photo TEXT,
     matches TEXT
 )
 ''')
 
 conn.commit()
+
+
+# Указываем функцию для обработки текстовых сообщений
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if context.user_data.get('potential_matches'):
+        await show_next_match(update, context)
+    elif context.user_data.get('registering'):
+        await receive_info(update, context)
+    elif context.user_data.get('edit_mode'):
+        await receive_new_info(update, context)
+    else:
+        await update.message.reply_text("Команда не распознана. Используйте /help.")
 
 
 def main() -> None:
@@ -44,13 +64,12 @@ def main() -> None:
 
     # Обработчики команд
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("register", register))
     application.add_handler(CommandHandler("help", help_command))
-    # application.add_handler(CommandHandler("register", register))
-    # application.add_handler(CommandHandler("profile", profile))
-    # application.add_handler(CommandHandler("find_match", find_match))
-    # application.add_handler(CommandHandler("edit_profile", edit_profile))
-    # application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
-    # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    application.add_handler(CommandHandler("profile", profile))
+    application.add_handler(CommandHandler("edit_profile", edit_profile))
+    application.add_handler(MessageHandler(filters.PHOTO, receive_photo))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     # Запускаем бота
     application.run_polling()
