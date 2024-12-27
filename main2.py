@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT,
     name TEXT,
     course TEXT,
+    course_name TEXT,
     age TEXT,
     tags TEXT,
     info TEXT,
