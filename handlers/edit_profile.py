@@ -74,7 +74,7 @@ async def receive_new_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Изменяем на соответствующее название поля в базе данных
             column_name_mapping = {
                 'Описание': 'info',
-                'Предпочтения': 'preferences',
+                'Кого я ищу': 'preferences',
                 'Теги': 'tags',
                 'Фото': 'photo'
             }
